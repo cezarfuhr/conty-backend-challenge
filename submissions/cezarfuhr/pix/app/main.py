@@ -1,5 +1,7 @@
 from fastapi import FastAPI
-from app import api
+from app import api, database, models
+
+models.Base.metadata.create_all(bind=database.engine)
 
 app = FastAPI(title="Conty PIX Challenge")
 

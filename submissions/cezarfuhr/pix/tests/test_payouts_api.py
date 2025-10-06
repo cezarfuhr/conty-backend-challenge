@@ -1,13 +1,29 @@
+import os
+os.environ['API_KEY'] = 'test-key'
+
 from fastapi.testclient import TestClient
 from app.main import app
+from app.core.config import settings
 
 client = TestClient(app)
+
+def test_process_batch_no_api_key():
+    """Teste sem chave de API - deve retornar 401"""
+    response = client.post("/api/v1/payouts/batch", json={})
+    assert response.status_code == 401
+
+def test_process_batch_wrong_api_key():
+    """Teste com chave de API incorreta - deve retornar 401"""
+    headers = {"X-API-Key": "wrong-key"}
+    response = client.post("/api/v1/payouts/batch", json={}, headers=headers)
+    assert response.status_code == 401
 
 def test_process_batch_successfully():
     """
     Testa o processamento de um lote com sucesso.
     Este teste DEVE FALHAR ate a Saga 05.
     """
+    headers = {"X-API-Key": settings.API_KEY}
     payload = {
         "batch_id": "2025-10-06-A",
         "items": [
@@ -16,7 +32,7 @@ def test_process_batch_successfully():
         ]
     }
 
-    response = client.post("/api/v1/payouts/batch", json=payload)
+    response = client.post("/api/v1/payouts/batch", json=payload, headers=headers)
 
     assert response.status_code == 200
 

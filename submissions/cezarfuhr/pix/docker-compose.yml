@@ -7,3 +7,20 @@ services:
       - "8000:8000"
     volumes:
       - ./app:/app/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql://user:password@db:5432/payouts_db
+      - API_KEY=CONTY_CHALLENGE_SUPER_SECRET_KEY
+
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=payouts_db
+
+volumes:
+  postgres_data:

@@ -1,14 +1,14 @@
+from sqlalchemy.orm import Session
 from .models import PayoutBatch, PayoutReport
 from .repository import PayoutRepository
 
 class PayoutService:
-    def __init__(self):
-        # Em uma aplicação real, injetaríamos a dependência.
-        self.repository = PayoutRepository()
+    def __init__(self, db_session: Session):
+        self.repository = PayoutRepository(db_session)
 
     def process_batch(self, batch: PayoutBatch) -> PayoutReport:
-        # Lógica a ser implementada na Saga 04.
-        # Retorno hardcoded para o teste E2E falhar de forma previsível.
+        # Logica a ser implementada na Saga 04.
+        # Retorno hardcoded para o teste E2E falhar de forma previsivel.
         return PayoutReport(
             batch_id=batch.batch_id,
             processed=0,

@@ -7,10 +7,24 @@
 ### **Passos de Execução**
 
 **1. Implementar o Gerenciamento de Sessão de DB (`app/dependencies.py`):**
-   - Crie um novo arquivo `app/dependencies.py` para gerenciar o ciclo de vida da sessão do banco de dados.
+   - Crie ou atualize o arquivo `app/dependencies.py` para gerenciar o ciclo de vida da sessão do banco de dados e a validação da API Key.
      ```python
+     from fastapi import Security, HTTPException, status
+     from fastapi.security import APIKeyHeader
      from .database import SessionLocal
+     from .core.config import settings
 
+     # --- Segurança ---
+     api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+     def validate_api_key(key: str = Security(api_key_header)):
+         if not key or key != settings.API_KEY:
+             raise HTTPException(
+                 status_code=status.HTTP_401_UNAUTHORIZED,
+                 detail="Invalid or missing API Key"
+             )
+
+     # --- Banco de Dados ---
      def get_db_session():
          db = None
          try:
@@ -22,18 +36,23 @@
      ```
 
 **2. Atualizar a Camada de API para Usar Dependências (`app/api.py`):**
-   - Modifique `app/api.py` para injetar a sessão do banco de dados (`db: Session`) e então criar o serviço com essa sessão.
+   - Modifique `app/api.py` para injetar a sessão do banco de dados (`db: Session`) e a dependência de segurança.
      ```python
      from fastapi import APIRouter, Depends
      from sqlalchemy.orm import Session
 
      from .models import PayoutBatch, PayoutReport
      from .services import PayoutService
-     from .dependencies import get_db_session
+     from .dependencies import get_db_session, validate_api_key
 
      router = APIRouter()
 
-     @router.post("/payouts/batch", response_model=PayoutReport, tags=["Payouts"])
+     @router.post(
+         "/payouts/batch",
+         response_model=PayoutReport,
+         tags=["Payouts"],
+         dependencies=[Depends(validate_api_key)] # Protege o endpoint
+     )
      def process_payout_batch(
          batch: PayoutBatch,
          db: Session = Depends(get_db_session)
@@ -42,16 +61,13 @@
          return service.process_batch(batch)
      ```
 
-**3. Remover Instanciação Manual do Serviço:**
-   - O `app/services.py` já está correto da saga anterior, recebendo a sessão do DB no construtor. Nenhuma mudança é necessária aqui.
-
-**4. Garantir que o Teste E2E Use o Banco de Testes:**
-   - O teste E2E usará o mesmo `docker-compose.yml`, então ele rodará contra a instância de banco de dados de teste, o que é o comportamento desejado. Nenhuma mudança é necessária no arquivo `tests/test_payouts_api.py`.
+**3. Atualizar o Teste E2E para Passar:**
+   - O teste em `tests/test_payouts_api.py` é a peça final. Ele já deve ter sido atualizado na Saga 3.1 para incluir o header `X-API-Key`. Nenhuma mudança adicional é esperada aqui, mas a execução dele é o principal critério de sucesso.
 
 ---
 
 **Critério de Sucesso:**
-1.  Os arquivos `app/dependencies.py` e `app/api.py` devem ser criados/atualizados.
+1.  Os arquivos `app/dependencies.py` e `app/api.py` devem estar atualizados.
 2.  O comando `docker compose up --build -d` deve iniciar a aplicação e o banco de dados.
 3.  O comando `docker compose exec api pytest` deve ser executado e o resultado esperado é **TODOS OS TESTES PASSANDO**, incluindo o teste E2E `test_process_batch_successfully`.
-4.  Uma chamada `curl` com um payload de lote deve retornar um relatório de processamento bem-sucedido.
+4.  Uma chamada `curl` com a `X-API-Key` correta e um payload de lote deve retornar um relatório de processamento bem-sucedido.

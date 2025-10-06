@@ -120,31 +120,45 @@ Esta solução foi projetada como um microsserviço robusto, seguindo os princí
 
 ```mermaid
 graph TD
-    A[Cliente API] --> B[API Layer (FastAPI)];
-    B --> C[Service Layer];
-    C --> D[Repository Layer];
-    D --> E[DB (PostgreSQL)];
+    Client[Cliente HTTP] -->|POST /api/v1/payouts/batch| API
 
-    subgraph "API Layer"
-        B1["/api/v1/payouts/batch"]
-        B2[Segurança: API Key & Rate Limiting]
-        B3[Validação de Payload (Pydantic)]
+    subgraph FastAPI["🌐 FastAPI Application"]
+        MW1[Rate Limiter Middleware]
+        MW2[Validação API Key]
+        API[api.py: process_payout_batch]
+        Validator[Pydantic: PayoutBatch]
+        Deps[dependencies.py: get_db_session]
     end
 
-    subgraph "Service Layer"
-        C1[PayoutService]
-        C2[Lógica de Negócio]
-        C3[Simulação de Pagamento]
+    subgraph Service["⚙️ Service Layer"]
+        PS[PayoutService]
+        Logic["Lógica de Negócio + process_batch"]
+        SimPay["Simulação de Pagamento 95% sucesso"]
     end
 
-    subgraph "Repository Layer"
-        D1[PayoutRepository]
-        D2[Abstração do Banco]
-        D3[Garantia de Idempotência]
+    subgraph Repo["💾 Repository Layer"]
+        PR[PayoutRepository]
+        Check[was_processed: verifica duplicatas]
+        Save[save_payout: persiste com constraint]
     end
 
-    B -- Injeção de Dependência --> C;
-    C -- Interage com --> D;
+    subgraph DB["🗄️ PostgreSQL"]
+        Table[(payouts: UNIQUE external_id)]
+    end
+
+    Client --> MW1
+    MW1 --> MW2
+    MW2 --> API
+    API --> Validator
+    Validator --> Deps
+    Deps -->|Fornece Session| PS
+    PS --> Logic
+    Logic --> SimPay
+    PS -->|Cria instância| PR
+    Logic --> Check
+    Logic --> Save
+    Check --> Table
+    Save --> Table
 ```
 
 ### Principais Features

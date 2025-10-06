@@ -169,12 +169,68 @@ graph TD
   - 0 warnings de deprecation
   - Type hints completos
 
+### Trade-offs e Decisões
+
+**Decisões tomadas:**
+- ✅ Idempotência via DB constraint (não em-memory) - mais seguro, survives restarts
+- ✅ Simulação aleatória 95% sucesso - realista para testes de retry
+- ✅ Rate limiting por IP - simples e efetivo para API pública
+- ✅ Logs estruturados JSON - pronto para agregadores (ELK, Datadog)
+- ✅ Repository pattern - desacopla lógica de persistência
+
+**Com mais tempo, faria:**
+- 🔄 Retry automático com exponential backoff para falhas transitórias
+- 🔄 Dead Letter Queue (DLQ) para itens que falharam múltiplas vezes
+- 🔄 Webhook callback para notificar cliente do resultado do batch
+- 🔄 Métricas Prometheus (`/metrics`) para alertas e dashboards
+- 🔄 Circuit breaker no provedor de pagamento externo
+- 🔄 Compressão de payloads grandes (gzip)
+- 🔄 Rate limiting mais sofisticado (por API key, tiered plans)
+- 🔄 Async processing com Celery/RQ para batches grandes (>1000 items)
+
 ---
 
-## Uso de Inteligência Artificial (Primo IA Team)
+## 🤖 Uso de IA e Bibliotecas de Terceiros
 
-Este projeto foi desenvolvido utilizando um fluxo de trabalho colaborativo entre humano e IAs, batizado de **Primo IA Team**.
+### Uso de Inteligência Artificial (Primo IA Team)
 
-- **Conductor (Humano - Cezar Fuhr):** Atuou como o líder do projeto, definindo a visão estratégica, tomando as decisões finais e guiando o trabalho das IAs.
-- **Planner (IA - Gemini):** Atuou como o arquiteto e planejador, transformando os objetivos em planos de execução detalhados (sagas), revisando o código e garantindo a qualidade e a aderência à arquitetura.
-- **Executor (IA - Claude):** Atuou como o implementador, executando os planos de forma precisa para gerar o código da aplicação e dos testes.
+Este projeto foi desenvolvido utilizando um fluxo de trabalho colaborativo entre humano e IAs:
+
+- **Conductor (Humano - Cezar Fuhr):** Líder do projeto, definiu visão estratégica, decisões finais e guiou o trabalho das IAs
+- **Planner (IA - Gemini):** Arquiteto e planejador, criou planos de execução detalhados (sagas), revisou código e garantiu qualidade
+- **Executor (IA - Claude Code):** Implementador, executou os planos gerando código da aplicação e testes
+
+**O que foi gerado por IA:**
+- ~95% do código (seguindo arquitetura definida pelo Planner)
+- 100% dos testes automatizados
+- Estrutura do projeto e configurações
+- Documentação inicial
+
+**O que é autoria humana:**
+- Visão e estratégia do projeto
+- Decisões arquiteturais (Clean Architecture, Repository Pattern)
+- Escolha de tecnologias (FastAPI, PostgreSQL, slowapi)
+- Revisão e aprovação de todos os planos (sagas)
+- Definição de critérios de qualidade (90% coverage, 0 warnings)
+
+### Bibliotecas de Terceiros
+
+| Biblioteca | Versão | Uso | Licença |
+|------------|--------|-----|---------|
+| `fastapi` | ^0.116.1 | Framework web | MIT |
+| `uvicorn` | ^0.35.0 | ASGI server | BSD |
+| `pydantic` | ^2.x | Validação de dados | MIT |
+| `pydantic-settings` | ^2.10.1 | Config management | MIT |
+| `sqlalchemy` | ^2.0.43 | ORM | MIT |
+| `psycopg2-binary` | ^2.9.10 | PostgreSQL driver | LGPL |
+| `slowapi` | ^0.1.9 | Rate limiting | MIT |
+| `pytest` | ^8.4.1 | Testing framework | MIT |
+| `pytest-cov` | ^7.0.0 | Coverage reporting | MIT |
+| `httpx` | ^0.28.1 | HTTP client (testes) | BSD |
+
+**Código 100% próprio (sem cópia):**
+- Toda a lógica de negócio (`app/services.py`)
+- Camada de repositório com idempotência (`app/repository.py`)
+- Modelos de dados (`app/models.py`)
+- Configurações e estrutura (`app/dependencies.py`, `app/api.py`)
+- Toda a suíte de testes (16 testes únicos)

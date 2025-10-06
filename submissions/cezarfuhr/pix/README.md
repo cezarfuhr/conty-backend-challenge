@@ -6,51 +6,111 @@ Implementação do desafio de pagamentos em lote (PIX), com foco em idempotênci
 
 ---
 
-## Como Executar
+## 🚀 Quick Start
 
-Este projeto é 100% containerizado. Os únicos pré-requisitos são **Docker** e **Docker Compose**.
+### Pré-requisitos
+- **Docker** e **Docker Compose** (para rodar a aplicação)
+- **Poetry** (para rodar os testes localmente)
 
-**1. Iniciar a Aplicação:**
+### 1. Setup Inicial
 
-Na raiz deste diretório (`pix/`), execute o script:
+Clone o repositório e entre no diretório:
 
-```sh
+```bash
+cd submissions/cezarfuhr/pix
+```
+
+Configure as variáveis de ambiente (opcional, já tem defaults):
+
+```bash
+cp .env.example .env
+```
+
+### 2. Iniciar a Aplicação (Docker)
+
+Execute o script de inicialização:
+
+```bash
 ./run.sh
 ```
 
-Isso irá construir as imagens e iniciar a API e o banco de dados. A API estará disponível em [http://localhost:8000](http://localhost:8000).
+Isso irá:
+- Construir as imagens Docker
+- Iniciar PostgreSQL e a API
+- A API estará disponível em http://localhost:8000
 
-**2. Executar um Lote de Pagamentos (Exemplo):**
+**Verificar Health:**
 
-Use o comando `curl` abaixo para submeter um lote de pagamentos. A `API_KEY` está definida no arquivo `docker-compose.yml`.
-
-```sh
-curl -X POST "http://localhost:8000/api/v1/payouts/batch" \
--H "Content-Type: application/json" \
--H "X-API-Key: CONTY_CHALLENGE_SUPER_SECRET_KEY" \
--d \
-'{
-  "batch_id": "batch-`date +%s`",
-  "items": [
-    { "external_id": "user-a-001", "user_id": "u1", "amount_cents": 15000, "pix_key": "a@test.com" },
-    { "external_id": "user-b-002", "user_id": "u2", "amount_cents": 25000, "pix_key": "b@test.com" }
-  ]
-}'
+```bash
+curl http://localhost:8000/health
+# Retorna: {"status":"healthy","timestamp":...,"checks":{"database":"healthy",...}}
 ```
 
-**3. Rodar os Testes:**
+### 3. Testar a API
 
-Para executar a suíte completa de testes (16 testes) com coverage, use o comando:
+Submeta um lote de pagamentos:
 
-```sh
+```bash
+curl -X POST "http://localhost:8000/api/v1/payouts/batch" \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: CONTY_CHALLENGE_SUPER_SECRET_KEY" \
+  -d '{
+    "batch_id": "batch-test-001",
+    "items": [
+      { "external_id": "user-a-001", "user_id": "u1", "amount_cents": 15000, "pix_key": "a@test.com" },
+      { "external_id": "user-b-002", "user_id": "u2", "amount_cents": 25000, "pix_key": "b@test.com" }
+    ]
+  }'
+```
+
+**Testar Idempotência** (reenvie o mesmo lote):
+
+```bash
+# Mesmo comando acima - verá duplicates: 2
+```
+
+**Testar Rate Limiting** (envie 6+ requests rápidas):
+
+```bash
+# 6ª request retornará: HTTP 429 Too Many Requests
+```
+
+### 4. Rodar os Testes
+
+**Com coverage (recomendado):**
+
+```bash
+poetry install
 poetry run pytest
 ```
 
-Ou apenas executar localmente:
+**Verbose mode:**
 
-```sh
+```bash
 PYTHONPATH=. poetry run pytest -v
 ```
+
+**Resultados esperados:**
+- ✅ 16 testes passando
+- 📊 90% code coverage
+- 📄 Relatório HTML em `htmlcov/index.html`
+
+---
+
+## 📡 Endpoints da API
+
+| Método | Endpoint | Descrição | Auth |
+|--------|----------|-----------|------|
+| `GET` | `/` | Health check simples | ❌ |
+| `GET` | `/health` | Health check completo (DB, version) | ❌ |
+| `POST` | `/api/v1/payouts/batch` | Processar lote de pagamentos | ✅ |
+
+**Autenticação:**
+- Header: `X-API-Key: CONTY_CHALLENGE_SUPER_SECRET_KEY`
+
+**Rate Limiting:**
+- 5 requisições por minuto por IP
+- Retorna `HTTP 429` quando excedido
 
 ---
 

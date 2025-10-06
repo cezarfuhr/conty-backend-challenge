@@ -147,3 +147,4 @@ cython_debug/
 
 # VSCode
 .vscode/
+\n# Test databases\ntest.db

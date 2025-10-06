@@ -12,7 +12,12 @@ client = TestClient(app, base_url="http://testserver.local")
 def test_rate_limit_is_enforced():
     """Garante que o endpoint retorna 429 apos exceder o limite."""
     headers = {"X-API-Key": settings.API_KEY}
-    payload = {"batch_id": "rate-limit-test", "items": []}
+    payload = {
+        "batch_id": "rate-limit-test",
+        "items": [
+            {"external_id": "rl-1", "user_id": "u1", "amount_cents": 100, "pix_key": "test@test.com"}
+        ]
+    }
 
     # 5 requisicoes devem passar
     for i in range(5):

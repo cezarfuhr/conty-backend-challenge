@@ -18,7 +18,18 @@ class PayoutService:
 
     def process_batch(self, batch: PayoutBatch) -> PayoutReport:
         """Processa um lote de pagamentos, garantindo idempotencia via DB."""
-        logger.info(f"Processing {len(batch.items)} items for batch {batch.batch_id}")
+        import time
+        start_time = time.time()
+
+        logger.info(
+            "batch_processing_started",
+            extra={
+                "batch_id": batch.batch_id,
+                "item_count": len(batch.items),
+                "event": "batch_start"
+            }
+        )
+
         report_details: List[PayoutDetail] = []
         successful_count = 0
         failed_count = 0
@@ -51,6 +62,21 @@ class PayoutService:
                     amount_cents=item.amount_cents
                 )
             )
+
+        processing_time = time.time() - start_time
+
+        logger.info(
+            "batch_processing_completed",
+            extra={
+                "batch_id": batch.batch_id,
+                "item_count": len(batch.items),
+                "successful": successful_count,
+                "failed": failed_count,
+                "duplicates": duplicate_count,
+                "processing_time_seconds": round(processing_time, 3),
+                "event": "batch_complete"
+            }
+        )
 
         return PayoutReport(
             batch_id=batch.batch_id,

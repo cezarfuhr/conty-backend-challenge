@@ -14,6 +14,16 @@ class JSONFormatter(logging.Formatter):
             "function": record.funcName,
             "line": record.lineno,
         }
+
+        # Add extra fields for structured logging (metrics)
+        for key, value in record.__dict__.items():
+            if key not in ['name', 'msg', 'args', 'created', 'filename', 'funcName',
+                          'levelname', 'levelno', 'lineno', 'module', 'msecs',
+                          'message', 'pathname', 'process', 'processName',
+                          'relativeCreated', 'thread', 'threadName', 'exc_info',
+                          'exc_text', 'stack_info', 'taskName']:
+                log_entry[key] = value
+
         if record.exc_info:
             log_entry["exception"] = self.formatException(record.exc_info)
         return json.dumps(log_entry, ensure_ascii=False)

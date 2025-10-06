@@ -28,3 +28,33 @@ app.include_router(api.router, prefix="/api/v1")
 @app.get("/", tags=["Health Check"])
 def read_root():
     return {"status": "ok"}
+
+@app.get("/health", tags=["Health Check"])
+def health_check():
+    """Rich health check with database connectivity and application info."""
+    import time
+    from sqlalchemy import text
+
+    health_data = {
+        "status": "healthy",
+        "timestamp": time.time(),
+        "service": "conty-pix-api",
+        "version": "1.0.0",
+        "checks": {
+            "database": "unknown",
+            "api": "healthy"
+        }
+    }
+
+    # Check database connectivity
+    try:
+        from app.database import SessionLocal
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        health_data["checks"]["database"] = "healthy"
+    except Exception as e:
+        health_data["status"] = "degraded"
+        health_data["checks"]["database"] = f"unhealthy: {str(e)}"
+
+    return health_data

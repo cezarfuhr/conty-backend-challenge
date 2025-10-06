@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from app import api, database, models
+from app.core.logging_config import configure_logging
+
+# Configura o logging como a primeira acao
+configure_logging()
 
 models.Base.metadata.create_all(bind=database.engine)
 

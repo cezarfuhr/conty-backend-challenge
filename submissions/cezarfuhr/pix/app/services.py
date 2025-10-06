@@ -1,9 +1,12 @@
+import logging
 import random
 from typing import List
 from sqlalchemy.orm import Session
 
 from .models import PayoutBatch, PayoutReport, PayoutDetail
 from .repository import PayoutRepository
+
+logger = logging.getLogger(__name__)
 
 class PayoutService:
     def __init__(self, db_session: Session):
@@ -15,6 +18,7 @@ class PayoutService:
 
     def process_batch(self, batch: PayoutBatch) -> PayoutReport:
         """Processa um lote de pagamentos, garantindo idempotencia via DB."""
+        logger.info(f"Processing {len(batch.items)} items for batch {batch.batch_id}")
         report_details: List[PayoutDetail] = []
         successful_count = 0
         failed_count = 0

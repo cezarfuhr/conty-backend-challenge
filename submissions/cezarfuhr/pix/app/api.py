@@ -6,11 +6,15 @@ from .dependencies import validate_api_key, get_db_session
 
 router = APIRouter()
 
-@router.post("/payouts/batch", response_model=PayoutReport, tags=["Payouts"])
+@router.post(
+    "/payouts/batch",
+    response_model=PayoutReport,
+    tags=["Payouts"],
+    dependencies=[Depends(validate_api_key)]
+)
 def process_payout_batch(
     batch: PayoutBatch,
-    db: Session = Depends(get_db_session),
-    _api_key: None = Depends(validate_api_key)
+    db: Session = Depends(get_db_session)
 ) -> PayoutReport:
-    service = PayoutService(db)
+    service = PayoutService(db_session=db)
     return service.process_batch(batch)

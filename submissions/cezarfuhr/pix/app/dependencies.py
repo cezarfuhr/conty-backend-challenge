@@ -14,8 +14,10 @@ def validate_api_key(key: str = Security(api_key_header)):
         )
 
 def get_db_session():
-    db = SessionLocal()
+    db = None
     try:
+        db = SessionLocal()
         yield db
     finally:
-        db.close()
+        if db:
+            db.close()
